@@ -1,0 +1,81 @@
+from fpdf import FPDF
+import csv, os, qrcode
+
+def make_invoice(customer, product, amount, invoice_no, date_str, output_dir="output"):
+    os.makedirs(output_dir, exist_ok=True)
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Helvetica", "B", 22)
+    pdf.set_text_color(30, 80, 180)
+    pdf.cell(0, 12, "ANDY BIZ INVOICE", ln=True)
+    pdf.set_draw_color(30,80,180)
+    pdf.line(10, 22, 200, 22)
+    pdf.set_font("Helvetica", "", 11)
+    pdf.set_text_color(50,50,50)
+    pdf.ln(8)
+    pdf.cell(0, 7, f"Invoice No: {invoice_no}", ln=True)
+    pdf.cell(0, 7, f"Date: {date_str}", ln=True)
+    pdf.cell(0, 7, f"Bill To: {customer}", ln=True)
+    pdf.ln(5)
+    pdf.set_font("Helvetica", "B", 12)
+    pdf.set_fill_color(240,240,240)
+    pdf.cell(90, 10, "Description", border=1, fill=True)
+    pdf.cell(50, 10, "Amount (NGN)", border=1, fill=True, align="C")
+    pdf.cell(50, 10, "Status", border=1, fill=True, align="C", ln=True)
+    pdf.set_font("Helvetica", "", 11)
+    pdf.cell(90, 10, f" {product}", border=1)
+    pdf.cell(50, 10, f"{amount}", border=1, align="C")
+    pdf.cell(50, 10, "PAID", border=1, align="C", ln=True)
+    pdf.ln(8)
+    pdf.set_font("Helvetica", "B", 11)
+    pdf.cell(0, 8, f"Total Due: NGN {amount}", ln=True)
+    qr = qrcode.make(f"{invoice_no}|{customer}|{amount}")
+    qr_path = f"/tmp/{invoice_no}.png"
+    qr.save(qr_path)
+    pdf.image(qr_path, x=10, y=pdf.get_y()+2, w=30)
+    pdf.set_xy(45, pdf.get_y()+2)
+    pdf.set_font("Helvetica", "", 9)
+    pdf.multi_cell(0, 5, "Scan to verify. Thank you! Contact: +234 YourNumber")
+    out_path = os.path.join(output_dir, f"{invoice_no}_{customer.replace(' ','_')}.pdf")
+    pdf.output(out_path)
+    return out_path
+
+def make_certificate(name, event, award_date, output_dir="output"):
+    os.makedirs(output_dir, exist_ok=True)
+    pdf = FPDF(orientation="L")
+    pdf.add_page()
+    pdf.set_draw_color(200, 160, 60)
+    pdf.set_line_width(1.2)
+    pdf.rect(10, 10, 277, 190)
+    pdf.set_line_width(0.4)
+    pdf.rect(13, 13, 271, 184)
+    pdf.set_font("Helvetica", "B", 28)
+    pdf.set_text_color(30,80,180)
+    pdf.ln(20)
+    pdf.cell(0, 15, "CERTIFICATE OF COMPLETION", align="C", ln=True)
+    pdf.set_font("Helvetica", "", 14)
+    pdf.set_text_color(80,80,80)
+    pdf.ln(5)
+    pdf.cell(0, 10, "This is proudly presented to", align="C", ln=True)
+    pdf.set_font("Helvetica", "B", 22)
+    pdf.set_text_color(0,0,0)
+    pdf.ln(3)
+    pdf.cell(0, 12, name.upper(), align="C", ln=True)
+    pdf.set_font("Helvetica", "", 13)
+    pdf.set_text_color(80,80,80)
+    pdf.ln(3)
+    pdf.cell(0, 8, f"For completing {event}", align="C", ln=True)
+    pdf.cell(0, 8, f"on {award_date}", align="C", ln=True)
+    out_path = os.path.join(output_dir, f"CERT_{name.replace(' ','_')}.pdf")
+    pdf.output(out_path)
+    return out_path
+
+if __name__ == "__main__":
+    print("Generating...")
+    with open("data_example.csv") as f:
+        for row in __import__("csv").DictReader(f):
+            make_invoice(row["customer_name"], row["product"], row["amount"], row["invoice_no"], row["date"])
+    with open("certificates.csv") as f:
+        for row in __import__("csv").DictReader(f):
+            make_certificate(row["name"], row["event"], row["award_date"])
+    print("Done!")
